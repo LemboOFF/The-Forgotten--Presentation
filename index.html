@@ -1,0 +1,170 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <meta charset="UTF-8" />
+  <title>Slide Viewer</title>
+
+  <style>
+    body {
+      margin: 0;
+      background: #111;
+      overflow: hidden;
+      height: 100vh;
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      font-family: Arial;
+    }
+
+    .stage {
+      position: relative;
+      width: 90vw;
+      height: 90vh;
+    }
+
+    .slide, video {
+      position: absolute;
+      top: 50%;
+      left: 50%;
+      max-width: 100%;
+      max-height: 100%;
+      transform: translate(-50%, -50%);
+      border-radius: 12px;
+      box-shadow: 0 20px 60px rgba(0,0,0,0.6);
+    }
+
+    .anim {
+      transition: transform 0.45s ease-out;
+    }
+
+    .left-out {
+      transform: translate(-150%, -50%);
+    }
+
+    .right-in {
+      transform: translate(150%, -50%);
+    }
+
+    .center {
+      transform: translate(-50%, -50%);
+    }
+
+    .hint {
+      position: absolute;
+      bottom: 10px;
+      color: #aaa;
+      font-size: 14px;
+      width: 100%;
+      text-align: center;
+    }
+
+    video {
+      display: none;
+    }
+  </style>
+</head>
+
+<body>
+
+<div class="stage">
+  <img id="imgSlide" class="slide anim center" src="assets/pages/page1.jpg" />
+  <video id="videoSlide" class="slide anim"></video>
+</div>
+
+<audio id="bgm" loop>
+  <source src="assets/music/song.mp3" type="audio/mpeg">
+</audio>
+
+<div class="hint">Use ← → arrows</div>
+
+<script>
+  const slides = [
+    { type: "img", src: "assets/pages/page1.jpg" },
+    { type: "img", src: "assets/pages/page2.jpg" },
+    { type: "img", src: "assets/pages/page3.jpg" },
+    { type: "img", src: "assets/pages/page4.jpg" },
+    { type: "video", src: "assets/pages/page5.mp4" }
+  ];
+
+  let index = 0;
+  let busy = false;
+
+  const img = document.getElementById("imgSlide");
+  const video = document.getElementById("videoSlide");
+  const bgm = document.getElementById("bgm");
+
+  function playMusic() {
+    bgm.volume = 0.4;
+    bgm.play().catch(() => {});
+  }
+
+  function pauseMusic() {
+    bgm.pause();
+  }
+
+  function renderSlide(nextIndex, direction) {
+    if (busy || nextIndex < 0 || nextIndex >= slides.length) return;
+    busy = true;
+
+    const current = slides[index];
+    const next = slides[nextIndex];
+
+    const currentEl = current.type === "img" ? img : video;
+    const nextEl = next.type === "img" ? img : video;
+
+    // prepare next slide position
+    nextEl.classList.add("anim");
+    nextEl.style.display = "block";
+
+    if (direction === "right") {
+      nextEl.classList.add("right-in");
+    } else {
+      nextEl.classList.add("left-out");
+    }
+
+    setTimeout(() => {
+      // move current out
+      currentEl.classList.add(direction === "right" ? "left-out" : "right-in");
+
+      // bring next in center
+      nextEl.classList.remove("left-out", "right-in");
+      nextEl.classList.add("center");
+
+      // update index
+      index = nextIndex;
+
+      const s = slides[index];
+
+      // handle video/music swap
+      if (s.type === "video") {
+        pauseMusic();
+        img.style.display = "none";
+        video.style.display = "block";
+        video.src = s.src;
+        video.currentTime = 0;
+        video.play();
+      } else {
+        video.pause();
+        video.style.display = "none";
+        img.style.display = "block";
+        img.src = s.src;
+        playMusic();
+      }
+
+      setTimeout(() => {
+        busy = false;
+      }, 450);
+
+    }, 20);
+  }
+
+  document.addEventListener("keydown", (e) => {
+    if (e.key === "ArrowRight") renderSlide(index + 1, "right");
+    if (e.key === "ArrowLeft") renderSlide(index - 1, "left");
+  });
+
+  document.addEventListener("keydown", playMusic, { once: true });
+</script>
+
+</body>
+</html>
